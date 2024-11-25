@@ -1,0 +1,222 @@
+-- Services
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local ChatService = game:GetService("Chat")
+local Character = LocalPlayer.Character or LocalPlayer.CharacterAdded:Wait()
+
+-- Whitelist Table
+local whitelist = {}
+
+-- Function to add player to whitelist
+local function addToWhitelist(playerName)
+    if not whitelist[playerName] then
+        whitelist[playerName] = true
+        print(playerName .. " added to whitelist!")
+        ChatService:Chat(LocalPlayer.Character.Head, playerName .. " has been added to the whitelist.", Enum.ChatColor.Blue)
+    end
+end
+
+-- Function to remove player from whitelist
+local function removeFromWhitelist(playerName)
+    if whitelist[playerName] then
+        whitelist[playerName] = nil
+        print(playerName .. " removed from whitelist.")
+        ChatService:Chat(LocalPlayer.Character.Head, playerName .. " has been removed from the whitelist.", Enum.ChatColor.Red)
+    end
+end
+
+-- Function to check if player is whitelisted
+local function isWhitelisted(player)
+    return whitelist[player.Name] or whitelist[player.DisplayName] or false
+end
+
+-- Add the local player to the whitelist by default
+addToWhitelist(LocalPlayer.Name)
+
+-- Automatically add new players to the whitelist
+Players.PlayerAdded:Connect(function(player)
+    if not isWhitelisted(player) then
+        addToWhitelist(player.Name)
+    end
+end)
+
+-- Automatically remove players from the whitelist when they leave
+Players.PlayerRemoving:Connect(function(player)
+    removeFromWhitelist(player.Name)
+end)
+
+-- GUI Setup
+local function createGUI()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "NaskiGUI"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.Parent = PlayerGui
+
+    -- Main Frame (Smaller size for a minimal GUI)
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0, 250, 0, 400)  -- Adjusted height to fit everything
+    MainFrame.Position = UDim2.new(0.5, -125, 0.5, -200)  -- Center it
+    MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    MainFrame.BackgroundTransparency = 0.5
+    MainFrame.BorderSizePixel = 2
+    MainFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)
+    MainFrame.Parent = ScreenGui
+
+    -- Sliding Animation for Frame (Ensures smooth appearance)
+    task.defer(function()
+        for i = -0.5, 0, 0.05 do
+            MainFrame.Position = UDim2.new(i, 0, 0.5, -200)
+            task.wait(0.01)
+        end
+    end)
+
+    -- Title Label
+    local Title = Instance.new("TextLabel")
+    Title.Text = "Naski GUI"
+    Title.Size = UDim2.new(1, 0, 0.1, 0)
+    Title.Position = UDim2.new(0, 0, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Font = Enum.Font.Fantasy
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextScaled = true
+    Title.Parent = MainFrame
+
+    -- Whitelist Tab Button
+    local WhitelistTab = Instance.new("TextButton")
+    WhitelistTab.Text = "Whitelist"
+    WhitelistTab.Size = UDim2.new(1, 0, 0.1, 0)
+    WhitelistTab.Position = UDim2.new(0, 0, 0.1, 0)
+    WhitelistTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    WhitelistTab.Font = Enum.Font.Fantasy
+    WhitelistTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+    WhitelistTab.TextScaled = true
+    WhitelistTab.Parent = MainFrame
+
+    -- Scrolling Frame for Player List (dynamically updated)
+    local ScrollFrame = Instance.new("ScrollingFrame")
+    ScrollFrame.Size = UDim2.new(1, 0, 0.3, 0)  -- Adjusted height for compact size
+    ScrollFrame.Position = UDim2.new(0, 0, 0.2, 0)
+    ScrollFrame.BackgroundTransparency = 1
+    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+    ScrollFrame.ScrollBarThickness = 4
+    ScrollFrame.Parent = MainFrame
+
+    -- Function to update the whitelist UI dynamically
+    local function updateWhitelistUI()
+        -- Clear previous UI elements
+        for _, button in ipairs(ScrollFrame:GetChildren()) do
+            if button:IsA("TextButton") then
+                button:Destroy()
+            end
+        end
+
+        -- Create buttons for each whitelisted player
+        for playerName, _ in pairs(whitelist) do
+            local button = Instance.new("TextButton")
+            button.Text = playerName
+            button.Size = UDim2.new(1, 0, 0.1, 0)  -- Compact size
+            button.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+            button.Font = Enum.Font.Fantasy
+            button.TextColor3 = Color3.fromRGB(255, 255, 255)
+            button.TextScaled = true
+            button.Parent = ScrollFrame
+
+            -- Function to remove player from whitelist when button is clicked
+            button.MouseButton1Click:Connect(function()
+                removeFromWhitelist(playerName)
+                updateWhitelistUI()  -- Update UI after removal
+            end)
+        end
+    end
+
+    -- Refresh the whitelist UI every time a player joins or leaves
+    Players.PlayerAdded:Connect(function(player)
+        if isWhitelisted(player) then
+            updateWhitelistUI()
+        end
+    end)
+
+    Players.PlayerRemoving:Connect(function(player)
+        updateWhitelistUI()
+    end)
+
+    -- Update the UI when the script is first run
+    updateWhitelistUI()
+
+    -- Goal Section (Displays task or goal)
+    local GoalTab = Instance.new("TextButton")
+    GoalTab.Text = "Goal: Achieve Success"
+    GoalTab.Size = UDim2.new(1, 0, 0.1, 0)
+    GoalTab.Position = UDim2.new(0, 0, 0.5, 0)  -- Positioned below whitelist
+    GoalTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    GoalTab.Font = Enum.Font.Fantasy
+    GoalTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+    GoalTab.TextScaled = true
+    GoalTab.Parent = MainFrame
+
+    -- Credit Section (Final button in the list)
+    local CreditsTab = Instance.new("TextButton")
+    CreditsTab.Text = "Credits"
+    CreditsTab.Size = UDim2.new(1, 0, 0.1, 0)
+    CreditsTab.Position = UDim2.new(0, 0, 0.7, 0)  -- Positioned below Goal
+    CreditsTab.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    CreditsTab.Font = Enum.Font.Fantasy
+    CreditsTab.TextColor3 = Color3.fromRGB(255, 255, 255)
+    CreditsTab.TextScaled = true
+    CreditsTab.Parent = MainFrame
+
+    -- Credits Frame (small pop-up for credits)
+    CreditsTab.MouseButton1Click:Connect(function()
+        local CreditsFrame = Instance.new("Frame")
+        CreditsFrame.Size = UDim2.new(0, 200, 0, 100)  -- Smaller size for credits
+        CreditsFrame.Position = UDim2.new(0.5, -100, 0.5, -50)
+        CreditsFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        CreditsFrame.BackgroundTransparency = 0.7
+        CreditsFrame.Parent = ScreenGui
+
+        -- Credits Label
+        local CreditsLabel = Instance.new("TextLabel")
+        CreditsLabel.Text = "Credits:\nDiscord: naskiiii\nMade by: Naski"
+        CreditsLabel.Size = UDim2.new(1, 0, 1, 0)
+        CreditsLabel.BackgroundTransparency = 1
+        CreditsLabel.Font = Enum.Font.Fantasy
+        CreditsLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+        CreditsLabel.TextScaled = true
+        CreditsLabel.Parent = CreditsFrame
+
+        -- Close Button for Credits
+        local CloseButton = Instance.new("TextButton")
+        CloseButton.Text = "Close"
+        CloseButton.Size = UDim2.new(0.3, 0, 0.2, 0)
+        CloseButton.Position = UDim2.new(0.5, -45, 0.8, -30)
+        CloseButton.BackgroundColor3 = Color3.fromRGB(255, 0, 0)
+        CloseButton.Font = Enum.Font.Fantasy
+        CloseButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+        CloseButton.TextScaled = true
+        CloseButton.Parent = CreditsFrame
+
+        -- Close action
+        CloseButton.MouseButton1Click:Connect(function()
+            CreditsFrame:Destroy()  -- Close the credits frame when button is clicked
+        end)
+    end)
+end
+
+-- Call the createGUI function to initialize the GUI
+createGUI()
+
+-- Ensure GUI loads after the character is fully loaded and no lag occurs
+game.Loaded:Wait()  -- Wait for the game to load
+game:WaitForChild("Players")  -- Wait for Players service to be fully available
+task.wait(1)  -- Add slight delay to avoid loading issues and prevent lag
+
+-- GUI initialization after loading
+local success, err = pcall(function()
+    createGUI()
+end)
+
+if not success then
+    warn("An error occurred while loading the GUI: " .. err)
+end 
+        
